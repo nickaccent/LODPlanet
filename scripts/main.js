@@ -1,5 +1,6 @@
 import '../style.css';
 import * as THREE from 'three';
+import Stats from 'three/examples/jsm/libs/stats.module';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { Planet } from './planet';
@@ -9,6 +10,7 @@ const clock = new THREE.Clock();
 
 class Game {
   constructor() {
+    this.lastPlayerPosition = new THREE.Vector3();
     this.useControlsTransform = false;
     this.useOrbit = this.prevTime = performance.now();
     this.elapsedTime = 0;
@@ -24,13 +26,16 @@ class Game {
 
     document.body.appendChild(this.renderer.domElement);
 
+    this.stats = new Stats();
+    document.body.appendChild(this.stats.dom);
+
     this.camera = new THREE.PerspectiveCamera(
       75,
       window.innerWidth / window.innerHeight,
       0.1,
       20000,
     );
-    this.camera.position.set(-10, 4, -25);
+    this.camera.position.set(-10, 4, -225);
     this.camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
@@ -45,7 +50,7 @@ class Game {
       new THREE.BoxGeometry(1, 1),
       new THREE.MeshBasicMaterial({ color: 0xffffff }),
     );
-    this.player.position.set(0, 0, -100);
+    this.player.position.set(0, 0, -150);
     this.scene.add(this.player);
 
     this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
@@ -54,7 +59,7 @@ class Game {
 
     this.SetupLights();
 
-    this.planet = new Planet(20, this.scene, this.player, this.renderer);
+    this.planet = new Planet(100, this.scene, this.player, this.renderer);
 
     this.Animate();
 
@@ -121,10 +126,17 @@ class Game {
     const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
     let currentTime = performance.now();
 
-    this.planet.PlanetGenerationLoop();
-    // this.controls.update();
+    if (
+      this.player.position.x != this.lastPlayerPosition.x ||
+      this.player.position.y != this.lastPlayerPosition.y ||
+      this.player.position.z != this.lastPlayerPosition.z
+    ) {
+      this.planet.PlanetGenerationLoop();
+      this.lastPlayerPosition.copy(this.player.position);
+    }
     this.renderer.render(this.scene, this.camera);
 
+    this.stats.update();
     let dt = (currentTime - this.prevTime) / 1000;
     this.prevTime = currentTime;
     this.elapsedTime = this.elapsedTime += dt;

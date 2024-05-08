@@ -12,13 +12,13 @@ export class Planet {
 
     this.detailLevelDistances = [];
     this.detailLevelDistances.push(9999999999999.99);
-    this.detailLevelDistances.push(60.0);
-    this.detailLevelDistances.push(25.0);
-    this.detailLevelDistances.push(10.0);
-    this.detailLevelDistances.push(4.0);
-    this.detailLevelDistances.push(1.5);
-    this.detailLevelDistances.push(0.7);
-    this.detailLevelDistances.push(0.3);
+    this.detailLevelDistances.push(512.0);
+    this.detailLevelDistances.push(256.0);
+    this.detailLevelDistances.push(128.0);
+    this.detailLevelDistances.push(64.0);
+    this.detailLevelDistances.push(32.0);
+    this.detailLevelDistances.push(16.0);
+    this.detailLevelDistances.push(8.0);
     this.detailLevelDistances.push(0.1);
 
     this.up = new THREE.Vector3(0, 1, 0);

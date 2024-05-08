@@ -16,8 +16,11 @@ export class Chunk {
     // If the detail level is under max level and above 0. Max level depends on how many detail levels are defined in planets and needs to be changed manually.
     if (this.detailLevel <= 8 && this.detailLevel >= 0) {
       if (
-        this.position.normalize().multiplyScalar(Planet.size).distanceTo(Planet.player.position) <=
-        Planet.detailLevelDistances[this.detailLevel]
+        this.position
+          .clone()
+          .normalize()
+          .multiplyScalar(Planet.size)
+          .distanceTo(Planet.player.position) <= Planet.detailLevelDistances[this.detailLevel]
       ) {
         // Assign the chunks children (grandchildren not included).
         // Position is calculated on a cube and based on the fact that each child has 1/2 the radius of the parent
