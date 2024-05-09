@@ -1,7 +1,19 @@
 import * as THREE from 'three';
 
 export class Chunk {
-  constructor(children, parent, position, radius, detailLevel, localUp, axisA, axisB) {
+  constructor(
+    planet,
+    children,
+    parent,
+    position,
+    radius,
+    detailLevel,
+    localUp,
+    axisA,
+    axisB,
+    terrainFace,
+  ) {
+    this.planet = planet;
     this.children = children;
     this.parent = parent;
     this.position = position;
@@ -10,17 +22,22 @@ export class Chunk {
     this.localUp = localUp;
     this.axisA = axisA;
     this.axisB = axisB;
+    this.terrainFace = terrainFace;
+    this.vertices = [];
+    this.triangles = [];
   }
 
-  GenerateChildren(Planet) {
+  GenerateChildren() {
+    const maxDetail = 8;
     // If the detail level is under max level and above 0. Max level depends on how many detail levels are defined in planets and needs to be changed manually.
-    if (this.detailLevel <= 8 && this.detailLevel >= 0) {
+    if (this.detailLevel <= maxDetail && this.detailLevel >= 0) {
       if (
         this.position
           .clone()
           .normalize()
-          .multiplyScalar(Planet.size)
-          .distanceTo(Planet.player.position) <= Planet.detailLevelDistances[this.detailLevel]
+          .multiplyScalar(this.planet.size)
+          .distanceTo(this.planet.player.position) <=
+        this.planet.detailLevelDistances[this.detailLevel]
       ) {
         // Assign the chunks children (grandchildren not included).
         // Position is calculated on a cube and based on the fact that each child has 1/2 the radius of the parent
@@ -33,6 +50,7 @@ export class Chunk {
           .add(this.axisB.clone().multiplyScalar(this.radius).divideScalar(2));
         this.children.push(
           new Chunk(
+            this.planet,
             [],
             this,
             pos,
@@ -41,6 +59,7 @@ export class Chunk {
             this.localUp,
             this.axisA,
             this.axisB,
+            this.terrainFace,
           ),
         );
         pos = this.position
@@ -49,6 +68,7 @@ export class Chunk {
           .sub(this.axisB.clone().multiplyScalar(this.radius).divideScalar(2));
         this.children.push(
           new Chunk(
+            this.planet,
             [],
             this,
             pos,
@@ -57,6 +77,7 @@ export class Chunk {
             this.localUp,
             this.axisA,
             this.axisB,
+            this.terrainFace,
           ),
         );
         pos = this.position
@@ -65,6 +86,7 @@ export class Chunk {
           .add(this.axisB.clone().multiplyScalar(this.radius).divideScalar(2));
         this.children.push(
           new Chunk(
+            this.planet,
             [],
             this,
             pos,
@@ -73,6 +95,7 @@ export class Chunk {
             this.localUp,
             this.axisA,
             this.axisB,
+            this.terrainFace,
           ),
         );
         pos = this.position
@@ -81,6 +104,7 @@ export class Chunk {
           .sub(this.axisB.clone().multiplyScalar(this.radius).divideScalar(2));
         this.children.push(
           new Chunk(
+            this.planet,
             [],
             this,
             pos,
@@ -89,12 +113,32 @@ export class Chunk {
             this.localUp,
             this.axisA,
             this.axisB,
+            this.terrainFace,
           ),
         );
 
         // Create grandchildren
         for (const child of this.children) {
-          child.GenerateChildren(Planet);
+          child.GenerateChildren(this.planet);
+        }
+      }
+    }
+  }
+
+  UpdateChunk() {
+    const distanceToPlayer = this.terrainFace.mesh
+      .localToWorld(this.position.clone().normalize().multiplyScalar(this.planet.size))
+      .distanceTo(this.planet.player.position);
+    if (this.detailLevel <= 8) {
+      if (distanceToPlayer > this.planet.detailLevelDistances[this.detailLevel]) {
+        this.children = [];
+      } else {
+        if (this.children.Length > 0) {
+          for (const child of this.children) {
+            child.UpdateChunk();
+          }
+        } else {
+          this.GenerateChildren();
         }
       }
     }
@@ -107,13 +151,26 @@ export class Chunk {
         toBeRendered = toBeRendered.concat(child.GetVisibleChildren());
       }
     } else {
-      toBeRendered.push(this);
-    }
+      let pDist = Math.pow(this.planet.size, 2) + Math.pow(this.planet.distanceToPlayer, 2);
+      let aDist = Math.pow(
+        this.terrainFace.mesh
+          .localToWorld(this.position.clone().normalize().multiplyScalar(this.planet.size))
+          .distanceTo(this.planet.player.position),
+        2,
+      );
+      let cDist = pDist - aDist;
+      let planetDist = 2 * this.planet.size * this.planet.distanceToPlayer;
+      let distance = Math.acos(cDist / planetDist);
 
+      if (!isNaN(distance) && distance < this.planet.cullingMinAngle) {
+        toBeRendered.push(this);
+      }
+    }
+    // console.log(toBeRendered);
     return toBeRendered;
   }
 
-  CalculateVerticesAndTriangles(Planet) {
+  CalculateVerticesAndTriangles() {
     let resolution = 8; // The resolution of the chunk. Can be changed
     let vertices = [];
     let triangles = [];
@@ -148,7 +205,7 @@ export class Chunk {
           .multiplyScalar(this.radius);
         pointOnUnitCube.add(axisBVal);
 
-        const pointOnUnitSphere = pointOnUnitCube.normalize().multiplyScalar(Planet.size);
+        const pointOnUnitSphere = pointOnUnitCube.normalize().multiplyScalar(this.planet.size);
         vertices.push(pointOnUnitSphere.x);
         vertices.push(pointOnUnitSphere.y);
         vertices.push(pointOnUnitSphere.z);
@@ -167,6 +224,8 @@ export class Chunk {
       }
     }
 
+    this.vertices = vertices;
+    this.triangles = triangles;
     return { vertices, triangles };
   }
 }

@@ -2,24 +2,30 @@ import * as THREE from 'three';
 import { TerrainFace } from './terrainFace';
 
 export class Planet {
-  constructor(size = 10, scene, player) {
+  constructor(position, size = 1000, player, scene) {
+    this.position = position;
     this.meshFilters = new THREE.Group();
     this.scene = scene;
     scene.add(this.meshFilters);
     this.terrainFaces = [];
     this.size = size;
     this.player = player;
+    this.startResolution = 9;
+    this.cullingMinAngle = 1.91986218;
+
+    this.distanceToPlayer = 0.0;
 
     this.detailLevelDistances = [];
     this.detailLevelDistances.push(9999999999999.99);
-    this.detailLevelDistances.push(512.0);
-    this.detailLevelDistances.push(256.0);
-    this.detailLevelDistances.push(128.0);
-    this.detailLevelDistances.push(64.0);
-    this.detailLevelDistances.push(32.0);
-    this.detailLevelDistances.push(16.0);
-    this.detailLevelDistances.push(8.0);
-    this.detailLevelDistances.push(0.1);
+    let max = this.size * 6;
+    this.detailLevelDistances.push(max);
+    this.detailLevelDistances.push(max / 2);
+    this.detailLevelDistances.push(max / 2 / 2);
+    this.detailLevelDistances.push(max / 2 / 2 / 2);
+    this.detailLevelDistances.push(max / 2 / 2 / 2 / 3);
+    this.detailLevelDistances.push(max / 2 / 2 / 2 / 3 / 3);
+    this.detailLevelDistances.push(max / 2 / 2 / 2 / 3 / 3 / 3);
+    this.detailLevelDistances.push(max / 2 / 2 / 2 / 3 / 3 / 3 / 3);
 
     this.up = new THREE.Vector3(0, 1, 0);
     this.down = new THREE.Vector3(0, -1, 0);
@@ -32,17 +38,22 @@ export class Planet {
     this.GenerateMesh();
   }
 
+  Update() {
+    this.distanceToPlayer = this.position.distanceTo(this.player.position);
+    this.UpdateMesh();
+  }
+
   PlanetGenerationLoop() {
     this.GenerateMesh();
   }
 
   Initialize() {
-    this.terrainFaces.push(new TerrainFace(4, this.forward, this.size));
-    this.terrainFaces.push(new TerrainFace(4, this.back, this.size));
-    this.terrainFaces.push(new TerrainFace(4, this.left, this.size));
-    this.terrainFaces.push(new TerrainFace(4, this.right, this.size));
-    this.terrainFaces.push(new TerrainFace(4, this.up, this.size));
-    this.terrainFaces.push(new TerrainFace(4, this.down, this.size));
+    this.terrainFaces.push(new TerrainFace(4, this.forward, this.size, this));
+    this.terrainFaces.push(new TerrainFace(4, this.back, this.size, this));
+    this.terrainFaces.push(new TerrainFace(4, this.left, this.size, this));
+    this.terrainFaces.push(new TerrainFace(4, this.right, this.size, this));
+    this.terrainFaces.push(new TerrainFace(4, this.up, this.size, this));
+    this.terrainFaces.push(new TerrainFace(4, this.down, this.size, this));
     for (const face of this.terrainFaces) {
       this.meshFilters.add(face);
     }
@@ -50,7 +61,13 @@ export class Planet {
 
   GenerateMesh() {
     for (const face of this.terrainFaces) {
-      face.ConstructTree(this);
+      face.ConstructTree();
+    }
+  }
+
+  UpdateMesh() {
+    for (const face of this.terrainFaces) {
+      face.UpdateTree();
     }
   }
 }

@@ -10,7 +10,6 @@ const clock = new THREE.Clock();
 
 class Game {
   constructor() {
-    this.lastPlayerPosition = new THREE.Vector3();
     this.useControlsTransform = false;
     this.useOrbit = this.prevTime = performance.now();
     this.elapsedTime = 0;
@@ -35,7 +34,7 @@ class Game {
       0.1,
       20000,
     );
-    this.camera.position.set(-10, 4, -225);
+    this.camera.position.set(-10, 4, -2250);
     this.camera.lookAt(0, 0, 0);
 
     this.scene = new THREE.Scene();
@@ -50,7 +49,7 @@ class Game {
       new THREE.BoxGeometry(1, 1),
       new THREE.MeshBasicMaterial({ color: 0xffffff }),
     );
-    this.player.position.set(0, 0, -150);
+    this.player.position.set(0, 0, -1500);
     this.scene.add(this.player);
 
     this.transformControls = new TransformControls(this.camera, this.renderer.domElement);
@@ -59,7 +58,7 @@ class Game {
 
     this.SetupLights();
 
-    this.planet = new Planet(100, this.scene, this.player, this.renderer);
+    this.planet = new Planet(new THREE.Vector3(0, 0, 0), 1000, this.player, this.scene);
 
     this.Animate();
 
@@ -126,14 +125,8 @@ class Game {
     const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
     let currentTime = performance.now();
 
-    if (
-      this.player.position.x != this.lastPlayerPosition.x ||
-      this.player.position.y != this.lastPlayerPosition.y ||
-      this.player.position.z != this.lastPlayerPosition.z
-    ) {
-      this.planet.PlanetGenerationLoop();
-      this.lastPlayerPosition.copy(this.player.position);
-    }
+    this.planet.Update();
+
     this.renderer.render(this.scene, this.camera);
 
     this.stats.update();
